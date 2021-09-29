@@ -13,7 +13,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.RSAPrivateKeySpec;
 
 import java.math.BigInteger;
-
+import java.util.Scanner;
 import javax.crypto.Cipher;
 
 public class KeyGenerator {
@@ -57,7 +57,26 @@ public class KeyGenerator {
                 receiverPubSpec.getPublicExponent());
         saveToFile("YPrivate.key", receiverPrivSpec.getModulus(),
                 receiverPrivSpec.getPrivateExponent());
-
+        
+        // Generate Symetric Keys
+        boolean exit = true;
+        Scanner input = new Scanner(System.in);
+        String userInput;
+        do {
+            System.out.println("Input 16 Characters:");
+            userInput = input.next();
+        }
+        while (userInput.length() != 16);
+        
+        System.out.println("This is userinput: " + userInput);
+        FileWriter out = new FileWriter("Symmetric.key");
+        try {
+            out.write(userInput);
+        } catch (Exception e) {
+            throw new IOException("Unexpected error", e);
+        } finally {
+            out.close();
+        }
     }
 
 
