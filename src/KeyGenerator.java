@@ -19,82 +19,44 @@ import javax.crypto.Cipher;
 public class KeyGenerator {
     public static void main(String[] args) throws Exception {
 
-        byte[] input = "x012340123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF".getBytes();
-        //117 characters, so input[] includes 117 bytes.
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-
-        //Generate a pair of keys
+        //Generate a pair of keys (1 of 2)
         SecureRandom random = new SecureRandom();
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-        generator.initialize(1024, random);  //1024: key size in bits
-        //when key size of RSA is 1024 bits, the RSA Plaintext block
-        //size needs to be <= 117 bytes; and the RSA Cyphertext
-        //block is always 128 Bytes (1024 bits) long.
-        KeyPair pair = generator.generateKeyPair();
-        Key pubKey = pair.getPublic();
-        Key privKey = pair.getPrivate();
+        generator.initialize(1024, random);
+        KeyPair sender = generator.generateKeyPair();
+        Key pubKeyX = sender.getPublic();
+        Key privKeyX = sender.getPrivate();
 
-        /* first, encryption & decryption via the paired keys */
-        cipher.init(Cipher.ENCRYPT_MODE, pubKey, random);
+        //Generate a pair of keys (2 of 2)
+        random = new SecureRandom();
+        generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(1024, random);
+        KeyPair receiver = generator.generateKeyPair();
+        Key pubKeyY = receiver.getPublic();
+        Key privKeyY = receiver.getPrivate();
 
-        byte[] cipherText = cipher.doFinal(input);
-
-        System.out.println("cipherText: block size = "
-                + cipherText.length + " Bytes");
-        for (int i=0, j=0; i<cipherText.length; i++, j++) {
-            System.out.format("%2X ", cipherText[i]) ;
-            if (j >= 15) {
-                System.out.println("");
-                j=-1;
-            }
-        }
-        System.out.println("");
-
-        cipher.init(Cipher.DECRYPT_MODE, privKey);
-        byte[] plainText = cipher.doFinal(cipherText);
-        System.out.println("plainText (" + plainText.length +" bytes): " + new String(plainText) + "\n");
-
-    /* next, store the keys to files, read them back from files,
-       and then, encrypt & decrypt using the keys from files. */
 
         //get the parameters of the keys: modulus and exponet
         KeyFactory factory = KeyFactory.getInstance("RSA");
-        RSAPublicKeySpec pubKSpec = factory.getKeySpec(pubKey,
+        RSAPublicKeySpec senderPubSpec = factory.getKeySpec(pubKeyX,
                 RSAPublicKeySpec.class);
-        RSAPrivateKeySpec privKSpec = factory.getKeySpec(privKey,
+        RSAPrivateKeySpec senderPrivSpec = factory.getKeySpec(privKeyX,
+                RSAPrivateKeySpec.class);
+        RSAPublicKeySpec receiverPubSpec = factory.getKeySpec(pubKeyY,
+                RSAPublicKeySpec.class);
+        RSAPrivateKeySpec receiverPrivSpec = factory.getKeySpec(privKeyY,
                 RSAPrivateKeySpec.class);
 
+
         //save the parameters of the keys to the files
-        saveToFile("RSAPublic.key", pubKSpec.getModulus(),
-                pubKSpec.getPublicExponent());
-        saveToFile("RSAPrivate.key", privKSpec.getModulus(),
-                privKSpec.getPrivateExponent());
-
-        //read the keys back from the files
-        PublicKey pubKey2 = readPubKeyFromFile("RSAPublic.key");
-        PrivateKey privKey2 = readPrivKeyFromFile("RSAPrivate.key");
-
-        //encrypt & decrypt using the keys from the files
-        byte[] input2 = "Hello World! (using the keys from files)".getBytes();
-
-        cipher.init(Cipher.ENCRYPT_MODE, pubKey2, random);
-
-        byte[] cipherText2 = cipher.doFinal(input2);
-
-        System.out.println("cipherText2: (" + cipherText2.length + "bytes)");
-        for (int i=0, j=0; i<cipherText2.length; i++, j++) {
-            System.out.format("%2X ", cipherText2[i]) ;
-            if (j >= 15) {
-                System.out.println("");
-                j=-1;
-            }
-        }
-        System.out.println("");
-
-        cipher.init(Cipher.DECRYPT_MODE, privKey2);
-        byte[] plainText2 = cipher.doFinal(cipherText2);
-        System.out.println("plainText2 : (" + plainText2.length
-                + " bytes)" + new String(plainText2) + "\n");
+        saveToFile("XPublic.key", senderPubSpec.getModulus(),
+                senderPubSpec.getPublicExponent());
+        saveToFile("XPrivate.key", senderPrivSpec.getModulus(),
+                senderPrivSpec.getPrivateExponent());
+        saveToFile("YPublic.key", receiverPubSpec.getModulus(),
+                receiverPubSpec.getPublicExponent());
+        saveToFile("YPrivate.key", receiverPrivSpec.getModulus(),
+                receiverPrivSpec.getPrivateExponent());
 
     }
 
@@ -104,7 +66,7 @@ public class KeyGenerator {
                                   BigInteger mod, BigInteger exp) throws IOException {
 
         System.out.println("Write to " + fileName + ": modulus = " +
-                mod.toString() + ", exponent = " + exp.toString() + "\n");
+                mod.toString() + "\nexponent = " + exp.toString() + "\n");
 
         ObjectOutputStream oout = new ObjectOutputStream(
                 new BufferedOutputStream(new FileOutputStream(fileName)));
@@ -116,64 +78,6 @@ public class KeyGenerator {
             throw new IOException("Unexpected error", e);
         } finally {
             oout.close();
-        }
-    }
-
-
-    //read key parameters from a file and generate the public key
-    public static PublicKey readPubKeyFromFile(String keyFileName)
-            throws IOException {
-
-        InputStream in =
-                KeyGenerator.class.getResourceAsStream(keyFileName);
-        ObjectInputStream oin =
-                new ObjectInputStream(new BufferedInputStream(in));
-
-        try {
-            BigInteger m = (BigInteger) oin.readObject();
-            BigInteger e = (BigInteger) oin.readObject();
-
-            System.out.println("Read from " + keyFileName + ": modulus = " +
-                    m.toString() + ", exponent = " + e.toString() + "\n");
-
-            RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
-            KeyFactory factory = KeyFactory.getInstance("RSA");
-            PublicKey key = factory.generatePublic(keySpec);
-
-            return key;
-        } catch (Exception e) {
-            throw new RuntimeException("Spurious serialisation error", e);
-        } finally {
-            oin.close();
-        }
-    }
-
-
-    //read key parameters from a file and generate the private key
-    public static PrivateKey readPrivKeyFromFile(String keyFileName)
-            throws IOException {
-
-        InputStream in =
-                KeyGenerator.class.getResourceAsStream(keyFileName);
-        ObjectInputStream oin =
-                new ObjectInputStream(new BufferedInputStream(in));
-
-        try {
-            BigInteger m = (BigInteger) oin.readObject();
-            BigInteger e = (BigInteger) oin.readObject();
-
-            System.out.println("Read from " + keyFileName + ": modulus = " +
-                    m.toString() + ", exponent = " + e.toString() + "\n");
-
-            RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(m, e);
-            KeyFactory factory = KeyFactory.getInstance("RSA");
-            PrivateKey key = factory.generatePrivate(keySpec);
-
-            return key;
-        } catch (Exception e) {
-            throw new RuntimeException("Spurious serialisation error", e);
-        } finally {
-            oin.close();
         }
     }
 
