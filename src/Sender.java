@@ -1,3 +1,6 @@
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.math.BigInteger;
 import java.security.DigestInputStream;
@@ -8,8 +11,11 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.Scanner;
 
 public class Sender {
-
-
+    static String IV = "AAAAAAAAAAAAAAAA";
+    static BufferedReader br;
+    static String symmetricKey;
+    static String fileName;
+    
     public static PublicKey readPubKeyFromFile(String keyFileName) throws IOException {
 
         ObjectInputStream oin = new ObjectInputStream(
@@ -31,6 +37,7 @@ public class Sender {
             throw new RuntimeException("Spurious serialisation error", er);
         }
     }
+    
 
         public static String getDigitalDigest(String f) throws Exception {
 
@@ -59,26 +66,46 @@ public class Sender {
             System.out.println("");
 
             String messageDigest = new String(hash);
-            BufferedOutputStream boi = new BufferedOutputStream(new FileOutputStream("message.dd"));
+            System.out.println(messageDigest);
+            try(BufferedOutputStream boi =
+                 new BufferedOutputStream(new FileOutputStream("message.dd"))) {
+                boi.write(hash);
+            }
+            catch(Exception e) {
+                throw new IOException("Unexpected error", e);
+            }
             System.out.println("Saved Digital Digest to message.dd");
             return messageDigest;
         }
+    
+    public static byte[] encrypt() throws Exception {
+        
+        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "SunJCE");
+        SecretKeySpec key = new SecretKeySpec(symmetricKey.getBytes("UTF-8"), "AES");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        return cipher.doFinal(getDigitalDigest(fileName).getBytes("UTF-8"));
+    }
 
 
     public static void main(String[] args) throws Exception {
 
         PublicKey YPublic = readPubKeyFromFile("YPublic.key");
-        BufferedReader br = new BufferedReader(new FileReader("Symmetric.key"));
+        br = new BufferedReader(new FileReader("Symmetric.key"));
+        symmetricKey = br.readLine();
         System.out.println("Read from Symmetric.key: " + br.readLine() + "\n");
 
         System.out.println("---------------------------------------------------------\n");
 
         System.out.println("Input the name of the message file: ");
         Scanner scanner = new Scanner(System.in);
-        String fileName = scanner.nextLine();
+        fileName = scanner.nextLine();
+        //encrypt();
         getDigitalDigest(fileName);
+        
+        BufferedInputStream testinput = new BufferedInputStream(new FileInputStream("message.dd"));
+        System.out.println(testinput.read());
 
-
+        
 
 
     }
