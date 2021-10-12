@@ -69,7 +69,7 @@ public class RSAConfidentiality {
         PrivateKey privKey2 = readPrivKeyFromFile("RSAPrivate.key");
 
         //encrypt & decrypt using the keys from the files
-        byte[] input2 = "Hello World! (using the keys from files)".getBytes();
+        byte[] input2 = "Hello World! (using the keys from files)".getBytes(); //only 40 bytes?
 
         cipher.init(Cipher.ENCRYPT_MODE, pubKey2, random);
 
@@ -112,10 +112,8 @@ public class RSAConfidentiality {
     public static PublicKey readPubKeyFromFile(String keyFileName)
             throws IOException {
 
-        InputStream in =
-                RSAConfidentiality.class.getResourceAsStream(keyFileName);
-        ObjectInputStream oin =
-                new ObjectInputStream(new BufferedInputStream(in));
+        ObjectInputStream oin = new ObjectInputStream(
+                new BufferedInputStream(new FileInputStream(keyFileName)));
 
         try {
             BigInteger m = (BigInteger) oin.readObject();
@@ -141,10 +139,8 @@ public class RSAConfidentiality {
     public static PrivateKey readPrivKeyFromFile(String keyFileName)
             throws IOException {
 
-        InputStream in =
-                RSAConfidentiality.class.getResourceAsStream(keyFileName);
-        ObjectInputStream oin =
-                new ObjectInputStream(new BufferedInputStream(in));
+        ObjectInputStream oin = new ObjectInputStream(
+                new BufferedInputStream(new FileInputStream(keyFileName)));
 
         try {
             BigInteger m = (BigInteger) oin.readObject();

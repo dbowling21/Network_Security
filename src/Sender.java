@@ -18,22 +18,17 @@ public class Sender {
     static String fileName;
 
     public static void main(String[] args) throws Exception {
-
         PublicKey YPublic = readPubKeyFromFile("YPublic.key");
-        //remove later
-        // PrivateKey YPrivate = readPrivKeyFromFile("YPrivate.key");
-
         //Get the symmetric key from file
         BufferedReader br = new BufferedReader(new FileReader("Symmetric.key"));
         symmetricKey = br.readLine();
         System.out.println("Read from Symmetric.key: " + br.readLine() + "\n");
         System.out.println("---------------------------------------------------------\n");
 
+        //todo  Display a prompt “Input the name of the message file" to get inputfile
         //Call the encrypt method which in turn calls the digital digest method
-        //the return is the fully encrypted byte array
-        byte[] encryptedMsg = encrypt("file.txt", YPublic);
-        //decrypt(encryptedMsg, YPrivate);
-
+        //the return is void but creates the message.rsacipher file
+        encrypt("314.jpg", YPublic);
     }
 
 
@@ -88,7 +83,7 @@ public class Sender {
         return
     } */
 
-    public static byte[] encrypt(String fileName,PublicKey pubKey) throws Exception {
+    public static void encrypt(String fileName,PublicKey pubKey) throws Exception {
 
         //new cipher that uses AES encryption with CBC scheme and no padding
         Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "SunJCE");
@@ -117,18 +112,47 @@ public class Sender {
         System.out.println("Saved AES cipher to message.add-msg\n");
 
         //*********************** RSA ****************************
+
+        //rsa cipher instance that uses padding and whose plaintext block must be 117 bytes
         Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         rsaCipher.init(Cipher.ENCRYPT_MODE, pubKey);
 
-        byte[] rsaCipherText = rsaCipher.doFinal(encryptedHash);
+        //pull input from the message.add-msg and create output stream for rsa result
+        BufferedInputStream inputFile = new BufferedInputStream(new FileInputStream("message.add-msg"));
+        BufferedOutputStream RSAout = new BufferedOutputStream(new FileOutputStream("message.rsacipher"));
+        int size = inputFile.available(); //uncomment to check how many bytes message.add-msg is
 
-        System.out.println("cipherText: block size = "
-                + rsaCipherText.length + " Bytes");
+        //create array to store 117 byte piece of message.add-msg
+        byte[] piece = new byte[117];
+        long position = 0;
+        int i;
+        do {
+            //todo test if this skip is actually making .read use the next 117 piece
+            inputFile.skip(position);
+            i = inputFile.read(piece,0, 117);
+            // if the piece that was read was a full 117 bytes
+            if (i == 117){
+                //write that piece to message.rsacipher
+                RSAout.write(rsaCipher.doFinal(piece));
+                //update position to be the beginning of the next 117 byte piece of message.add-msg
+                position += 117;
+            }
+            //if the piece isn't a full 117 bytes but has at least 1 byte
+            else if (i != -1){
+                //create a new array of whatever size the piece actually was
+                byte[] smallPiece = new byte[i];
+                //fill the new small array with the elements that were fed to the big array by inputFile.read line 131
+                for (int j = 0; j < i; j++) {
+                    smallPiece[j] = piece[j];
+                }
+                //perform encryption on the small piece (I assume this pads it) and write to file
+                RSAout.write(rsaCipher.doFinal(smallPiece));
+            }
+        } while (i == 117); //if the piece wasn't a full 117 then its the end of the input file
+        inputFile.close();
+        RSAout.close();
+        System.out.println("Saved RSA cipher to message.rsacipher\n");
 
-        toHex(rsaCipherText);
-
-
-        return rsaCipherText;
     }
 
     static void toHex(byte[] byteArray) {
@@ -161,7 +185,10 @@ public class Sender {
             return key;
         } catch (Exception er) {
             throw new RuntimeException("Spurious serialisation error", er);
+        } finally {
+            oin.close();
         }
+
     }
 
     public static PrivateKey readPrivKeyFromFile(String keyFileName)
