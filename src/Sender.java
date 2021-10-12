@@ -18,7 +18,7 @@ public class Sender {
     static String fileName;
 
     public static void main(String[] args) throws Exception {
-        PublicKey YPublic = readPubKeyFromFile("YPublic.key");
+        PublicKey pubKey = readPubKeyFromFile("YPublic.key");
         //Get the symmetric key from file
         BufferedReader br = new BufferedReader(new FileReader("Symmetric.key"));
         symmetricKey = br.readLine();
@@ -28,7 +28,7 @@ public class Sender {
         //todo  Display a prompt “Input the name of the message file" to get inputfile
         //Call the encrypt method which in turn calls the digital digest method
         //the return is void but creates the message.rsacipher file
-        encrypt("314.jpg", YPublic);
+        encrypt("file.txt", pubKey);
     }
 
 
@@ -67,21 +67,6 @@ public class Sender {
         System.out.println("Saved Digital Digest to message.dd\n");
         return hash;
     }
-
-   /* public static byte[] decrypt(byte[] cipher, PrivateKey privKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, NoSuchProviderException, UnsupportedEncodingException {
-        Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        rsaCipher.init(Cipher.DECRYPT_MODE, privKey);
-
-        byte[] rsaCipherText = rsaCipher.doFinal(cipher);
-        //*************************************************
-        Cipher AEScipher = Cipher.getInstance("AES/CBC/NoPadding", "SunJCE");
-        SecretKeySpec key = new SecretKeySpec(symmetricKey.getBytes("UTF-8"), "AES");
-        AEScipher.init(Cipher.ENCRYPT_MODE, key);
-        //perform the encryption on the digitaldigest hash value
-        byte[] encryptedHash = AEScipher.doFinal(rsaCipherText);
-
-        return
-    } */
 
     public static void encrypt(String fileName,PublicKey pubKey) throws Exception {
 
@@ -190,33 +175,4 @@ public class Sender {
         }
 
     }
-
-    public static PrivateKey readPrivKeyFromFile(String keyFileName)
-            throws IOException {
-
-        InputStream in =
-                RSAConfidentiality.class.getResourceAsStream(keyFileName);
-        ObjectInputStream oin =
-                new ObjectInputStream(new BufferedInputStream(in));
-
-        try {
-            BigInteger m = (BigInteger) oin.readObject();
-            BigInteger e = (BigInteger) oin.readObject();
-
-            System.out.println("Read from " + keyFileName + ": modulus = " +
-                    m.toString() + ", exponent = " + e.toString() + "\n");
-
-            RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(m, e);
-            KeyFactory factory = KeyFactory.getInstance("RSA");
-            PrivateKey key = factory.generatePrivate(keySpec);
-
-            return key;
-        } catch (Exception e) {
-            throw new RuntimeException("Spurious serialisation error", e);
-        } finally {
-            oin.close();
-        }
-    }
-
-
 }
