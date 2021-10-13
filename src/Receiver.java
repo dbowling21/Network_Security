@@ -33,7 +33,7 @@ public class Receiver {
 		
 		
 		rcvHash =  decrypt(userInput, privKey);
-		calcHash = getDigitalDigest("message.msg-output");
+		calcHash = getDigitalDigest(userInput);
 		if(Arrays.equals(rcvHash, calcHash)){
 			System.out.println("**************** HASH AUTHENTICATED ****************");
 		}
