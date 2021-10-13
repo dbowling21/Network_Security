@@ -21,7 +21,7 @@ public class Sender {
         //Get the symmetric key from file
         BufferedReader br = new BufferedReader(new FileReader("Symmetric.key"));
         symmetricKey = br.readLine();
-        System.out.println("Read from Symmetric.key: " + br.readLine() + "\n");
+        System.out.println("Read from Symmetric.key: " + symmetricKey + "\n");
         System.out.println("---------------------------------------------------------\n");
 
         //get user input for message file
@@ -70,6 +70,9 @@ public class Sender {
         //Print the hash value to console in hex
         System.out.println("Digital Digest (Hash Value) of M:");
         toHex(hash);
+        
+        //switch the first bit to test receiver authentication
+        hash = bitSwitch(hash);
 
         //Saves the hash value to the file message.dd
         try(BufferedOutputStream saveMD =
@@ -82,7 +85,31 @@ public class Sender {
         System.out.println("Saved Digital Digest to message.dd\n");
         return hash;
     }
-
+    
+    private static byte[] bitSwitch(byte[] hash) {
+        Scanner input = new Scanner(System.in);
+        String userInput;
+        boolean loop = true;
+        //get user input
+        do{
+            System.out.println("Do you want to invert the 1st byte in SHA256(M)? (Y or N)");
+            userInput = input.nextLine();
+            userInput = userInput.toUpperCase();
+           
+            if ( (userInput.equals("Y")) || (userInput.equals("N")) ) {
+                loop = false;
+            }
+            else{
+                System.out.println("Input not recognized. Try again");
+            }
+        }while(loop);
+        
+        if ((userInput.equals("Y"))){
+            hash[0] = (byte)~ hash[0];
+        }
+        return hash;
+    }
+    
     public static void encrypt(String fileName,PublicKey pubKey) throws Exception {
 
         //new cipher that uses AES encryption with CBC scheme and no padding
