@@ -1,27 +1,24 @@
 import java.io.*;
-
 import java.security.Key;
-import java.security.PublicKey;
-import java.security.PrivateKey;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
-import java.security.Security;
-
 import java.security.KeyFactory;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.RSAPrivateKeySpec;
-
 import java.math.BigInteger;
 import java.util.Scanner;
-import javax.crypto.Cipher;
 
 public class KeyGenerator {
+
+    static SecureRandom random;
+    static KeyPairGenerator generator;
+
     public static void main(String[] args) throws Exception {
 
         //Generate a pair of keys (1 of 2)
-        SecureRandom random = new SecureRandom();
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        random = new SecureRandom();
+        generator = KeyPairGenerator.getInstance("RSA");
         generator.initialize(1024, random);
         KeyPair sender = generator.generateKeyPair();
         Key pubKeyX = sender.getPublic();
@@ -58,8 +55,7 @@ public class KeyGenerator {
         saveToFile("YPrivate.key", receiverPrivSpec.getModulus(),
                 receiverPrivSpec.getPrivateExponent());
         
-        // Generate Symetric Keys
-        boolean exit = true;
+        // Generate Symmetric Keys
         Scanner input = new Scanner(System.in);
         String userInput;
         do {
@@ -68,7 +64,7 @@ public class KeyGenerator {
         }
         while (userInput.length() != 16);
         
-        System.out.println("This is userinput: " + userInput);
+        System.out.println("The input \"" + userInput + "\" will be used as the Symmetric Key.");
         FileWriter out = new FileWriter("Symmetric.key");
         try {
             out.write(userInput);
@@ -99,7 +95,6 @@ public class KeyGenerator {
             oout.close();
         }
     }
-
 
 }
 

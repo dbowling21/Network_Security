@@ -1,13 +1,9 @@
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.math.BigInteger;
 import java.security.*;
-import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Scanner;
 
@@ -29,7 +25,7 @@ public class Sender {
         String userInput;
         boolean loop = true;
         do{
-            System.out.print("Enter a file name: ");
+            System.out.print("Enter a file name to be encrypted: ");
             userInput = input.nextLine();
                 File fileName = new File(userInput);
                 if (fileName.exists()) {

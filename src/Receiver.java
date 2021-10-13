@@ -30,10 +30,22 @@ public class Receiver {
 		Scanner input = new Scanner(System.in);
 		System.out.print("Enter a name for the output file: ");
 		String userInput = input.nextLine();
-		
-		
+
+		long start, stop;
+
+		// Decrypt the received hash
+		start = System.nanoTime();
 		rcvHash =  decrypt(userInput, privKey);
+		stop = System.nanoTime();
+		System.out.println("Time Elapsed During Decryption: " + ((stop - start) / 1000000) + " milliseconds.\n");
+
+		// Locally calculate the hash
+		start = System.nanoTime();
 		calcHash = getDigitalDigest(userInput);
+		stop = System.nanoTime();
+		System.out.println("Time Elapsed During Local Calculation: " + ((stop - start) / 1000000) + " milliseconds.\n");
+
+		//Compare the received hash with the locally calculated hash
 		if(Arrays.equals(rcvHash, calcHash)){
 			System.out.println("**************** HASH AUTHENTICATED ****************");
 		}
