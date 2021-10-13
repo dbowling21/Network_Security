@@ -15,7 +15,6 @@ public class Sender {
     static String IV = "AAAAAAAAAAAAAAAA";
     static String symmetricKey;
     static byte[] msgArray;
-    static String fileName;
 
     public static void main(String[] args) throws Exception {
         PublicKey pubKey = readPubKeyFromFile("YPublic.key");
@@ -25,10 +24,26 @@ public class Sender {
         System.out.println("Read from Symmetric.key: " + br.readLine() + "\n");
         System.out.println("---------------------------------------------------------\n");
 
-        //todo  Display a prompt “Input the name of the message file" to get inputfile
+        //get user input for message file
+        Scanner input = new Scanner(System.in);
+        String userInput;
+        boolean loop = true;
+        do{
+            System.out.print("Enter a file name: ");
+            userInput = input.nextLine();
+                File fileName = new File(userInput);
+                if (fileName.exists()) {
+                    loop = false;
+                }
+                else{
+                    System.out.println("The file ~ " + userInput + " ~ does not exist. Try again");
+                }
+        }while(loop);
+        System.out.println("");
+        
         //Call the encrypt method which in turn calls the digital digest method
         //the return is void but creates the message.rsacipher file
-        encrypt("file.txt", pubKey);
+        encrypt(userInput, pubKey);
     }
 
 
@@ -106,36 +121,37 @@ public class Sender {
         BufferedInputStream inputFile = new BufferedInputStream(new FileInputStream("message.add-msg"));
         BufferedOutputStream RSAout = new BufferedOutputStream(new FileOutputStream("message.rsacipher"));
         int size = inputFile.available(); //uncomment to check how many bytes message.add-msg is
-
+        System.out.println("AES cipher size: " + size);
+        
         //create array to store 117 byte piece of message.add-msg
         byte[] piece = new byte[117];
         long position = 0;
         int i;
+        int loopRuns = 0;
         do {
-            //todo test if this skip is actually making .read use the next 117 piece
-            inputFile.skip(position);
+            //debugging variable
+            loopRuns++;
             i = inputFile.read(piece,0, 117);
             // if the piece that was read was a full 117 bytes
             if (i == 117){
                 //write that piece to message.rsacipher
                 RSAout.write(rsaCipher.doFinal(piece));
-                //update position to be the beginning of the next 117 byte piece of message.add-msg
-                position += 117;
             }
             //if the piece isn't a full 117 bytes but has at least 1 byte
             else if (i != -1){
                 //create a new array of whatever size the piece actually was
                 byte[] smallPiece = new byte[i];
-                //fill the new small array with the elements that were fed to the big array by inputFile.read line 131
+                //fill the new small array with the elements that were fed to the big array by inputFile.read
                 for (int j = 0; j < i; j++) {
                     smallPiece[j] = piece[j];
                 }
-                //perform encryption on the small piece (I assume this pads it) and write to file
+                //perform encryption on the small piece and write to file
                 RSAout.write(rsaCipher.doFinal(smallPiece));
             }
         } while (i == 117); //if the piece wasn't a full 117 then its the end of the input file
         inputFile.close();
         RSAout.close();
+        //System.out.println("NUMBER OF RUNS: " + loopRuns); //debugging output
         System.out.println("Saved RSA cipher to message.rsacipher\n");
 
     }

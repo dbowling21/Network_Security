@@ -9,6 +9,7 @@ import java.math.BigInteger;
 import java.security.*;
 import java.security.spec.RSAPrivateKeySpec;
 import java.util.Arrays;
+import java.util.Scanner;
 
 public class Receiver {
 	
@@ -25,7 +26,13 @@ public class Receiver {
 		//Get the symmetric key from file
 		BufferedReader br = new BufferedReader(new FileReader("Symmetric.key"));
 		symmetricKey = br.readLine();
-		rcvHash =  decrypt(privKey);
+		//get user input for message file
+		Scanner input = new Scanner(System.in);
+		System.out.print("Enter a name for the output file: ");
+		String userInput = input.nextLine();
+		
+		
+		rcvHash =  decrypt(userInput, privKey);
 		calcHash = getDigitalDigest("message.msg-output");
 		if(Arrays.equals(rcvHash, calcHash)){
 			System.out.println("**************** HASH AUTHENTICATED ****************");
@@ -57,22 +64,13 @@ public class Receiver {
 		byte[] hash = md.digest();
 		
 		//Print the hash value to console in hex
-		System.out.println("Digital Digest (Hash Value) of M:");
+		System.out.println("Calculated Digital Digest (Hash Value) of M:");
 		toHex(hash);
 		
-		//Saves the hash value to the file message.dd
-		try(BufferedOutputStream saveMD =
-			 new BufferedOutputStream(new FileOutputStream("message.dd"))) {
-			saveMD.write(hash);
-		}
-		catch(Exception e) {
-			throw new IOException("Unexpected error", e);
-		}
-		System.out.println("Saved Digital Digest to message.dd\n");
 		return hash;
 	}
 	
-	public static byte[] decrypt(PrivateKey privKey)
+	public static byte[] decrypt(String userInput, PrivateKey privKey)
 	throws NoSuchPaddingException, NoSuchAlgorithmException,
 		   InvalidKeyException, IOException, BadPaddingException,
 		   IllegalBlockSizeException, NoSuchProviderException,
@@ -83,22 +81,18 @@ public class Receiver {
 		//pull input from the message.rsacipher and create output stream for rsa result
 		BufferedInputStream inputFile = new BufferedInputStream(new FileInputStream("message.rsacipher"));
 		BufferedOutputStream RSAout = new BufferedOutputStream(new FileOutputStream("message.received-msg"));
-		//int size = inputFile.available(); //uncomment to check how many bytes message.add-msg is
-		
+		int size = inputFile.available(); //uncomment to check how many bytes message.rsacipher is
+		System.out.println("RSA cipher input size: " + size);
 		//create array to store 117 byte piece of message.add-msg
 		byte[] piece = new byte[128];
 		long position = 0;
 		int i;
 		do {
-			//todo test if this skip is actually making .read use the next 117 piece
-			inputFile.skip(position);
 			i = inputFile.read(piece,0, 128);
 			// if the piece that was read was a full 128 bytes
 			if (i == 128){
 				//write that piece to message.received-msg
 				RSAout.write(rsaCipher.doFinal(piece));
-				//update position to be the beginning of the next 128 byte piece of message.rsacipher
-				position += 128;
 			}
 		} while (i == 128); //if the piece wasn't a full 117 then its the end of the input file
 		inputFile.close();
@@ -108,9 +102,10 @@ public class Receiver {
 		//************************* AES *************************************
 		
 		inputFile = new BufferedInputStream(new FileInputStream("message.received-msg"));
-		//todo chnage this output to user selected by adding method param
-		BufferedOutputStream msgOut = new BufferedOutputStream(new FileOutputStream("message.msg-output"));
-		int size = inputFile.available();
+		//Stream to save decrypted message to user inputed file
+		BufferedOutputStream msgOut = new BufferedOutputStream(new FileOutputStream(userInput));
+		size = inputFile.available();
+		System.out.println("AES cipher size: " + size);
 		size = size - 32;
 		byte[] hash = new byte[32];
 		byte[] out = new byte[size];
